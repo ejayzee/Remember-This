@@ -13,10 +13,13 @@ import Speech
 
 class MemoriesViewController: UICollectionViewController {
 
+    var memories = [URL]()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        // Do any additional setup after loading the view.
+        // Do any additional setup after loading the view
+        loadMemories()
     }
 
     func checkPermissions() {
@@ -46,6 +49,43 @@ class MemoriesViewController: UICollectionViewController {
         super.viewDidAppear(animated)
         
         checkPermissions()
+    }
+    
+    func getDocumentsDirectory() -> URL {
+        
+        let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+        let documentsDirectory = paths[0]
+        
+        return documentsDirectory
+    }
+    
+    func loadMemories() {
+        memories.removeAll()
+        
+        // attempt to load all the memories in our documents directory
+        guard let files = try?
+            FileManager.default.contentsOfDirectory(at: getDocumentsDirectory(), includingPropertiesForKeys: nil, options: []) else { return }
+        
+        // loop over every file found
+        for file in files {
+            let filename = file.lastPathComponent
+            
+            // check it ends with ".thumb" so we don't count each memory more than once
+            if filename.hasSuffix(".thumb") {
+                
+                //get the root name of the memory (i.e., without its path extension)
+                let noExtension = filename.replacingOccurrences(of: ".thumb", with: "")
+                
+                // create a full path from the memory
+                let memoryPath = getDocumentsDirectory().appendingPathComponent(noExtension)
+                
+                // add it to our array
+                memories.append(memoryPath)
+            }
+        }
+        // reload our list of memories
+        collectionView?.reloadSections(IndexSet(integer: 1))
+        
     }
     
     override func didReceiveMemoryWarning() {
