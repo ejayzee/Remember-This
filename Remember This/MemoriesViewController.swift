@@ -10,6 +10,8 @@ import UIKit
 import AVFoundation
 import Photos
 import Speech
+import CoreSpotlight
+import MobileCoreServices
 
 class MemoriesViewController: UICollectionViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate, UICollectionViewDelegateFlowLayout, AVAudioRecorderDelegate {
 
@@ -340,6 +342,7 @@ class MemoriesViewController: UICollectionViewController, UIImagePickerControlle
                 // ...and write it to disk at the correct filename for this memory
                 do {
                     try text.write(to: transcription, atomically: true, encoding: String.Encoding.utf8)
+                    self.indexMemory(memory: memory, text: text)
                     
                 } catch {
                     print("Failed to save transcription")
@@ -369,6 +372,33 @@ class MemoriesViewController: UICollectionViewController, UIImagePickerControlle
             }
         } catch {
             print("Error loading audio")
+        }
+    }
+    
+    func indexMemory(memory: URL, text: String) {
+        
+        // create a basic attribute set
+        let attritubeSet = CSSearchableItemAttributeSet(itemContentType: kUTTypeText as String)
+        
+        attritubeSet.title = "Remember This Memory"
+        attritubeSet.contentDescription = text
+        attritubeSet.thumbnailURL = thumbnailURL(for: memory)
+        
+        // wrap it in a searchable item, using the memory's full path as its unique identifier
+        let item = CSSearchableItem(uniqueIdentifier: memory.path, domainIdentifier: "EJZ", attributeSet: attritubeSet)
+        
+        // make it never expire
+        item.expirationDate = Date.distantFuture
+        
+        // asl apotlight to index the item
+        CSSearchableIndex.default().indexSearchableItems([item]) { error in
+            
+            if let error = error {
+                print("Indexing error: \(error.localizedDescription)")
+                
+            } else {
+                print("Search item successfully indexed: \(text)")
+            }
         }
     }
     
