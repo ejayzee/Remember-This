@@ -14,6 +14,7 @@ import Speech
 class MemoriesViewController: UICollectionViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate, UICollectionViewDelegateFlowLayout {
 
     var memories = [URL]()
+    var activeMemory: URL!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -204,6 +205,16 @@ class MemoriesViewController: UICollectionViewController, UIImagePickerControlle
         
         cell.imageView.image = image
         
+        if cell.gestureRecognizers == nil {
+            let recognizer = UILongPressGestureRecognizer(target: self, action: #selector(memoryLongPress))
+            recognizer.minimumPressDuration = 0.25
+            cell.addGestureRecognizer(recognizer)
+            
+            cell.layer.borderColor = UIColor.white.cgColor
+            cell.layer.borderWidth = 3
+            cell.layer.cornerRadius = 10
+        }
+        
         return cell
     }
     
@@ -218,6 +229,31 @@ class MemoriesViewController: UICollectionViewController, UIImagePickerControlle
         } else {
             return CGSize(width: 0, height: 50)
         }
+    }
+    
+    func memoryLongPress(sender: UILongPressGestureRecognizer) {
+        if sender.state == .began {
+            let cell = sender.view as! MemoryCell
+            
+            if let index = collectionView?.indexPath(for: cell) {
+                activeMemory = memories[index.row]
+                recordMemory()
+            }
+        } else if sender.state == .ended {
+            finishRecording(success: true)
+        }
+    }
+    
+    func recordMemory() {
+        
+    }
+    
+    func finishRecording(success: Bool) {
+        
+    }
+    
+    func transcribeAudio(memory: URL) {
+        
     }
     
     override func didReceiveMemoryWarning() {
