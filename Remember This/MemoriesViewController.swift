@@ -20,6 +20,8 @@ class MemoriesViewController: UICollectionViewController, UIImagePickerControlle
     var audioRecorder: AVAudioRecorder?
     var recordingURL: URL!
     var audioPlayer: AVAudioPlayer?
+    var filteredMemories = [URL]()
+    var searchQuery: CSSearchQuery?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -93,6 +95,9 @@ class MemoriesViewController: UICollectionViewController, UIImagePickerControlle
                 memories.append(memoryPath)
             }
         }
+        
+        filteredMemories = memories
+        
         // reload our list of memories
         collectionView?.reloadSections(IndexSet(integer: 1))
         
@@ -182,7 +187,7 @@ class MemoriesViewController: UICollectionViewController, UIImagePickerControlle
         if section == 0 {
             return 0
         } else {
-            return memories.count
+            return filteredMemories.count
         }
     }
     
@@ -206,7 +211,7 @@ class MemoriesViewController: UICollectionViewController, UIImagePickerControlle
         
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "Memory", for: indexPath) as! MemoryCell
         
-        let memory = memories[indexPath.row]
+        let memory = filteredMemories[indexPath.row]
         let imageName = thumbnailURL(for: memory).path
         let image = UIImage.init(contentsOfFile: imageName)
         
@@ -243,7 +248,7 @@ class MemoriesViewController: UICollectionViewController, UIImagePickerControlle
             let cell = sender.view as! MemoryCell
             
             if let index = collectionView?.indexPath(for: cell) {
-                activeMemory = memories[index.row]
+                activeMemory = filteredMemories[index.row]
                 recordMemory()
             }
         } else if sender.state == .ended {
@@ -353,7 +358,7 @@ class MemoriesViewController: UICollectionViewController, UIImagePickerControlle
     
     override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         
-        let memory = memories[indexPath.row]
+        let memory = filteredMemories[indexPath.row]
         let fm = FileManager.default
         
         do {
@@ -399,6 +404,49 @@ class MemoriesViewController: UICollectionViewController, UIImagePickerControlle
             } else {
                 print("Search item successfully indexed: \(text)")
             }
+        }
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        filteredMemories(text: searchText)
+    }
+    
+    func filteredMemories(text: String) {
+        
+        guard text.characters.count > 0 else {
+            filteredMemories = memories
+            UIView.performWithoutAnimation {
+                collectionView?.reloadSections(IndexSet(integer: 1))
+            }
+            return
+        }
+        
+        var allItems = [CSSearchableItem]()
+        
+        searchQuery?.cancel()
+        
+        let queryString = "contentDescription == \"*\(text)*\"c"
+        
+        searchQuery = CSSearchQuery(queryString: queryString, attributes: nil)
+        
+        searchQuery?.foundItemsHandler = { items in
+            allItems.append(contentsOf: items)
+    }
+        searchQuery?.completionHandler = { error in
+            DispatchQueue.main.async { [unowned self] in
+                self .activateFilter(matches: allItems)
+            }
+        }
+        searchQuery?.start()
+    }
+    
+    func activateFilter(matches: [CSSearchableItem]) {
+        filteredMemories = matches.map { item in
+            
+            return URL(fileURLWithPath: item.uniqueIdentifier)
+    }
+        UIView.performWithoutAnimation {
+            collectionView?.reloadSections(IndexSet(integer: 1))
         }
     }
     
