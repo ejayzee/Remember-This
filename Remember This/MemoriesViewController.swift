@@ -11,7 +11,7 @@ import AVFoundation
 import Photos
 import Speech
 
-class MemoriesViewController: UICollectionViewController, UIImagePickerControllerDelegate, UINavigationBarDelegate {
+class MemoriesViewController: UICollectionViewController, UIImagePickerControllerDelegate, UINavigationControllerDelegate, UICollectionViewDelegateFlowLayout {
 
     var memories = [URL]()
     
@@ -94,7 +94,7 @@ class MemoriesViewController: UICollectionViewController, UIImagePickerControlle
         
         let vc = UIImagePickerController()
         vc.modalPresentationStyle = .formSheet
-        //vc.delegate = self
+        vc.delegate = self
         navigationController?.present(vc, animated: true)
     }
     
@@ -164,6 +164,60 @@ class MemoriesViewController: UICollectionViewController, UIImagePickerControlle
         
         // send it back to the caller
         return newImage
+    }
+    
+    override func numberOfSections(in collectionView: UICollectionView) -> Int {
+        return 2
+    }
+    
+    override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        if section == 0 {
+            return 0
+        } else {
+            return memories.count
+        }
+    }
+    
+    func imageURL(for memory: URL) -> URL {
+        return memory.appendingPathExtension("jpg")
+    }
+
+    func thumbnailURL(for memory: URL) -> URL {
+        return memory.appendingPathExtension("thumb")
+    }
+    
+    func audioURL(for memory: URL) -> URL {
+        return memory.appendingPathExtension("m4a")
+    }
+    
+    func transcriptionURL(for memory: URL) -> URL {
+        return memory.appendingPathExtension("txt")
+    }
+    
+    override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "Memory", for: indexPath) as! MemoryCell
+        
+        let memory = memories[indexPath.row]
+        let imageName = thumbnailURL(for: memory).path
+        let image = UIImage.init(contentsOfFile: imageName)
+        
+        cell.imageView.image = image
+        
+        return cell
+    }
+    
+    override func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView {
+        return collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: "Header", for: indexPath)
+    }
+    
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, referenceSizeForHeaderInSection section: Int) -> CGSize {
+        
+        if section == 1 {
+            return CGSize.zero
+        } else {
+            return CGSize(width: 0, height: 50)
+        }
     }
     
     override func didReceiveMemoryWarning() {
